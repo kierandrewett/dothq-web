@@ -1,0 +1,56 @@
+version: "3.7"
+services:
+    caddy:
+        image: caddy:alpine
+        restart: unless-stopped
+        networks:
+            - dothq
+        ports:
+            - 80:80
+            - 443:443
+        volumes:
+            - $PWD/Caddyfile:/etc/caddy/Caddyfile
+            - caddy_data:/data
+            - caddy_config:/config
+
+    web:
+        build: .
+        networks:
+            - dothq
+
+    wp:
+        image: wordpress
+        restart: unless-stopped
+        networks:
+            - dothq
+        ports:
+            - 127.0.0.1:3001:80
+        environment:
+            WORDPRESS_DB_HOST: wpdb
+            WORDPRESS_DB_USER: wp
+            WORDPRESS_DB_PASSWORD: wp
+            WORDPRESS_DB_NAME: wp
+        volumes:
+            - wordpress:/var/www/html
+
+    wpdb:
+        image: mysql:5.7
+        restart: unless-stopped
+        networks:
+            - dothq
+        environment:
+            MYSQL_DATABASE: wp
+            MYSQL_USER: wp
+            MYSQL_PASSWORD: wp
+            MYSQL_RANDOM_ROOT_PASSWORD: '1'
+        volumes:
+            - db:/var/lib/mysql
+
+volumes:
+    caddy_data:
+    caddy_config:
+    wordpress:
+    db:
+
+networks:
+    dothq: {}
