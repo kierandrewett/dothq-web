@@ -1,0 +1,7 @@
+[upstream]
+[upstream.frontend]
+hostname = "docker:web"
+port = 3000
+
+[sites]
+"dothq6vkqebrwd54se4q22c7vfefws53qnodmdl23bzdf2yysvvh5uid.onion" = "frontend"

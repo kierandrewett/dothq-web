@@ -1,13 +1,20 @@
-FROM node:17-alpine
+FROM nginx:alpine
 
-WORKDIR /worker/build
-COPY . /worker/build
+RUN apk --update --allow-untrusted \
+    --repository http://dl-4.alpinelinux.org/alpine/latest-stable/community \
+    add tor nodejs
 
-ENV NEXT_TELEMETRY_DISABLED=1
+RUN sudo npm i typescript ts-node -g
+RUN ts-node index.ts
 
-RUN yarn
-RUN yarn build
+COPY nginx.conf /etc/nginx
+COPY sites-available /etc/nginx
+COPY torrc /etc/tor/torrc
 
-EXPOSE 3000
+RUN mkdir -p /var/lib/tor/hidden_service
 
-CMD ["yarn", "start", "-p", "3000"]
+RUN chown -R tor:tor /var/lib/tor/hidden_service/*
+RUN chmod 600 /var/lib/tor/hidden_service/*
+
+COPY start.sh /home/start.sh
+RUN chmod +x /home/start.sh && /home/start.sh

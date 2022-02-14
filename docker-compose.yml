@@ -1,56 +1,43 @@
 version: "3.7"
 services:
-    caddy:
-        image: caddy:alpine
+    nginx:
+        image: nginx:alpine
         restart: unless-stopped
-        networks:
-            - dothq
         ports:
             - 80:80
-            - 443:443
+        depends_on:
+            - web
+            - cms
+            - db
         volumes:
-            - $PWD/Caddyfile:/etc/caddy/Caddyfile
-            - caddy_data:/data
-            - caddy_config:/config
+            - $PWD/default.conf:/etc/nginx/nginx.conf
+            - /var/run/docker.sock:/tmp/docker.sock:ro
 
     web:
-        build: .
-        networks:
-            - dothq
-
-    wp:
-        image: wordpress
+        build: frontend
         restart: unless-stopped
-        networks:
-            - dothq
-        ports:
-            - 127.0.0.1:3001:80
-        environment:
-            WORDPRESS_DB_HOST: wpdb
-            WORDPRESS_DB_USER: wp
-            WORDPRESS_DB_PASSWORD: wp
-            WORDPRESS_DB_NAME: wp
-        volumes:
-            - wordpress:/var/www/html
 
-    wpdb:
-        image: mysql:5.7
-        restart: unless-stopped
-        networks:
-            - dothq
+    cms:
+        image: ghost:4-alpine
+        restart: always
+        depends_on:
+            - db
+        expose:
+            - 2368
         environment:
-            MYSQL_DATABASE: wp
-            MYSQL_USER: wp
-            MYSQL_PASSWORD: wp
-            MYSQL_RANDOM_ROOT_PASSWORD: '1'
-        volumes:
-            - db:/var/lib/mysql
+            database__client: mysql
+            database__connection__host: db
+            database__connection__user: root
+            database__connection__password: ghost
+            database__connection__database: ghost
+            url: http://0.0.0.0:2368
 
-volumes:
-    caddy_data:
-    caddy_config:
-    wordpress:
     db:
-
-networks:
-    dothq: {}
+        image: mysql:5.7
+        restart: always
+        expose:
+            - 3306
+        volumes:
+            - /data/cms/db:/var/lib/mysql
+        environment:
+            MYSQL_ROOT_PASSWORD: ghost
